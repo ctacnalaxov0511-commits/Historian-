@@ -11,7 +11,12 @@ from aiogram.types import (
     CallbackQuery,
 )
 from aiogram.types.chat_member import ChatMemberAdministrator, ChatMemberOwner
+import os
 
+if not os.path.exists("quotes_data.json"):
+    with open("quotes_data.json", "w", encoding="utf-8") as f:
+        f.write("{}")
+        
 TOKEN = "8402954126:AAFtyY-cbxhK_tiYkOxgcuMf3JryLK8mN0I"
 DATA_FILE = "quotes_data.json"
 
