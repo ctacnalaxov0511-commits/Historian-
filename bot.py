@@ -10,23 +10,29 @@ from aiogram.types import (
     InlineKeyboardButton,
     CallbackQuery,
 )
-from aiogram.types.chat_member import ChatMemberAdministrator, ChatMemberOwner
+from aiogram.types import ChatMember  # Исправлено
 import os
 
-if not os.path.exists("quotes_data.json"):
-    with open("quotes_data.json", "w", encoding="utf-8") as f:
-        f.write("{}")
-        
-TOKEN = "8402954126:AAFtyY-cbxhK_tiYkOxgcuMf3JryLK8mN0I"
+# ======================
+# Файл данных
+# ======================
 DATA_FILE = "quotes_data.json"
+if not os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        f.write("{}")
+        print("📄 quotes_data.json создан")
+
+# ======================
+# Токен
+# ======================
+TOKEN = "8402954126:AAFtyY-cbxhK_tiYkOxgcuMf3JryLK8mN0I"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 # ======================
-# НАСТРОЙКИ
+# Настройки
 # ======================
-
 TIME_INTERVALS = [600, 1200, 1800, 3600]
 MAX_MESSAGES = 1000
 
@@ -41,20 +47,17 @@ MENTION_REPLIES = [
 ]
 
 # ======================
-# ХРАНИЛИЩА
+# Хранилища
 # ======================
-
 messages_store = {}
 current_quote = {}
 next_change_time = {}
 
 # ======================
-# УТИЛИТЫ
+# Утилиты
 # ======================
-
 def get_next_interval():
     return random.choice(TIME_INTERVALS)
-
 
 def normalize_command(text: str) -> str:
     text = text.lower().strip()
@@ -64,15 +67,12 @@ def normalize_command(text: str) -> str:
     body = re.sub(r"[^a-zа-яё]", "", text[1:])
     return prefix + body
 
-
 def format_quote(quote: dict) -> str:
     return f"💭 «{quote['text']}»\n— {quote['author']}"
 
-
 async def is_admin(chat_id: int, user_id: int) -> bool:
     member = await bot.get_chat_member(chat_id, user_id)
-    return isinstance(member, (ChatMemberAdministrator, ChatMemberOwner))
-
+    return member.status in ("administrator", "creator")  # Исправлено для aiogram 3.1+
 
 def save_data():
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -86,7 +86,6 @@ def save_data():
             ensure_ascii=False,
         )
 
-
 def load_data():
     global messages_store, current_quote, next_change_time
     try:
@@ -99,83 +98,66 @@ def load_data():
         pass
 
 # ======================
-# ТАЙМЕР
+# Таймер
 # ======================
-
 async def quote_timer():
     while True:
         now = time.time()
-
         for chat_id in list(messages_store.keys()):
             if not messages_store.get(chat_id):
                 continue
-
             if chat_id not in next_change_time or now >= next_change_time[chat_id]:
                 quote = random.choice(messages_store[chat_id])
                 current_quote[chat_id] = quote
                 next_change_time[chat_id] = now + get_next_interval()
-
                 try:
                     chat = await bot.get_chat(chat_id)
                     if chat.type in ("group", "supergroup"):
                         await bot.send_message(chat_id, format_quote(quote))
                 except Exception:
                     pass
-
                 save_data()
-
         await asyncio.sleep(30)
 
 # ======================
-# АДМИН-ПАНЕЛЬ
+# Админ-панель
 # ======================
-
 @dp.message(lambda m: normalize_command(m.text) in ("!admin", "/admin"))
 async def admin_panel(message: Message):
     if message.chat.type == "private":
         return
-
     if not await is_admin(message.chat.id, message.from_user.id):
         await message.reply("❌ Только для администраторов")
         return
-
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="⏱ Интервалы", callback_data="admin_intervals")],
         [InlineKeyboardButton(text="🧹 Очистить цитаты", callback_data="admin_clear")],
         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
     ])
-
     await message.reply("⚙ Админ-панель", reply_markup=kb)
-
 
 @dp.callback_query(lambda c: c.data.startswith("admin_"))
 async def admin_callbacks(call: CallbackQuery):
     chat_id = call.message.chat.id
-
     if not await is_admin(chat_id, call.from_user.id):
         await call.answer("Нет прав", show_alert=True)
         return
-
     if call.data == "admin_intervals":
         mins = [str(i // 60) for i in TIME_INTERVALS]
         await call.message.answer(f"⏱ Интервалы: {', '.join(mins)} мин")
-
     elif call.data == "admin_clear":
         messages_store[chat_id] = []
         current_quote.pop(chat_id, None)
         save_data()
         await call.message.answer("🧹 Все цитаты очищены")
-
     elif call.data == "admin_stats":
         count = len(messages_store.get(chat_id, []))
         await call.message.answer(f"📊 Сохранённых сообщений: {count}")
-
     await call.answer()
 
 # ======================
-# СООБЩЕНИЯ
+# Сообщения
 # ======================
-
 @dp.message()
 async def handle_message(message: Message):
     if message.chat.type == "private":
@@ -221,9 +203,8 @@ async def handle_message(message: Message):
         save_data()
 
 # ======================
-# ЗАПУСК
+# Запуск
 # ======================
-
 async def main():
     load_data()
     asyncio.create_task(quote_timer())
