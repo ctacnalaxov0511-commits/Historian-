@@ -10,7 +10,7 @@ from aiogram.types import (
     InlineKeyboardButton,
     CallbackQuery,
 )
-from aiogram.types import ChatMember  # Исправлено
+from aiogram.types import ChatMember
 import os
 
 # ======================
@@ -36,8 +36,7 @@ dp = Dispatcher()
 TIME_INTERVALS = [600, 1200, 1800, 3600]
 MAX_MESSAGES = 1000
 
-MENTION_CHANCE = 3
-MENTION_WORDS = ["историк", "бот"]
+MENTION_PHRASE = "бот, бот, историк, историк"  # точная фраза
 MENTION_REPLIES = [
     "👀 Я тут",
     "🤖 На месте",
@@ -72,7 +71,7 @@ def format_quote(quote: dict) -> str:
 
 async def is_admin(chat_id: int, user_id: int) -> bool:
     member = await bot.get_chat_member(chat_id, user_id)
-    return member.status in ("administrator", "creator")  # Исправлено для aiogram 3.1+
+    return member.status in ("administrator", "creator")
 
 def save_data():
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -166,13 +165,15 @@ async def handle_message(message: Message):
         return
 
     chat_id = message.chat.id
-    text = message.text
+    text = message.text.strip().lower()
     cmd = normalize_command(text)
 
-    if any(w in text.lower() for w in MENTION_WORDS):
-        if random.randint(1, MENTION_CHANCE) == 1:
-            await message.reply(random.choice(MENTION_REPLIES))
+    # Ответ только на точную фразу
+    if text == MENTION_PHRASE:
+        await message.reply(random.choice(MENTION_REPLIES))
+        return
 
+    # Команды цитат
     if cmd in ("!цитата", "/цитата", "!quote", "/quote"):
         quote = current_quote.get(chat_id)
         if quote:
@@ -192,9 +193,10 @@ async def handle_message(message: Message):
         await message.reply(format_quote(quote))
         return
 
+    # Сохраняем обычные сообщения
     if not text.startswith(("!", "/")):
         messages_store.setdefault(chat_id, []).append({
-            "text": text,
+            "text": message.text,
             "author": message.from_user.full_name
         })
         if len(messages_store[chat_id]) > MAX_MESSAGES:
