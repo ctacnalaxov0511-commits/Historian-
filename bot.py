@@ -23,9 +23,11 @@ if not os.path.exists(DATA_FILE):
         print("📄 quotes_data.json создан")
 
 # ======================
-# Токен
+# Токен через переменную окружения
 # ======================
-TOKEN = "8402954126:AAFtyY-cbxhK_tiYkOxgcuMf3JryLK8mN0I"
+TOKEN = os.getenv("BOT_TOKEN")
+if not TOKEN:
+    raise RuntimeError("❌ BOT_TOKEN не установлен! Задайте переменную окружения BOT_TOKEN")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -36,7 +38,7 @@ dp = Dispatcher()
 TIME_INTERVALS = [600, 1200, 1800, 3600]
 MAX_MESSAGES = 1000
 
-MENTION_PHRASE = "бот, бот, историк, историк"  # точная фраза
+MENTION_PHRASE = "бот, бот, историк, историк"  # точная фраза для реакции
 MENTION_REPLIES = [
     "👀 Я тут",
     "🤖 На месте",
