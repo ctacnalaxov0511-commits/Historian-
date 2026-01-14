@@ -141,17 +141,33 @@ async def admin_callbacks(call: CallbackQuery):
     if not await is_admin(chat_id, call.from_user.id):
         await call.answer("Нет прав", show_alert=True)
         return
+
     if call.data == "admin_intervals":
         mins = [str(i // 60) for i in TIME_INTERVALS]
         await call.message.answer(f"⏱ Интервалы: {', '.join(mins)} мин")
+
     elif call.data == "admin_clear":
         messages_store[chat_id] = []
         current_quote.pop(chat_id, None)
         save_data()
         await call.message.answer("🧹 Все цитаты очищены")
+
     elif call.data == "admin_stats":
-        count = len(messages_store.get(chat_id, []))
-        await call.message.answer(f"📊 Сохранённых сообщений: {count}")
+        messages = messages_store.get(chat_id, [])
+        num_messages = len(messages)
+        unique_authors = len(set(m['author'] for m in messages))
+        num_quotes_in_queue = num_messages
+        current = current_quote.get(chat_id)
+        current_text = format_quote(current) if current else "📭 Цитата ещё не выбрана"
+        stats_text = (
+            f"📊 Статистика чата:\n"
+            f"Всего сообщений сохранено: {num_messages}\n"
+            f"Уникальных авторов: {unique_authors}\n"
+            f"Цитат в очереди: {num_quotes_in_queue}\n"
+            f"Текущая цитата:\n{current_text}"
+        )
+        await call.message.answer(stats_text)
+
     await call.answer()
 
 # ======================
