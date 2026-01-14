@@ -1,12 +1,12 @@
-#!/bin/bash
-# start.sh — скрипт запуска бота
+# start.py
+import os
+import subprocess
 
-echo "🚀 Запуск бота Historian..."
-# Проверяем наличие файла quotes_data.json, если нет — создаём пустой
-if [ ! -f quotes_data.json ]; then
-    echo "{}" > quotes_data.json
-    echo "📄 quotes_data.json создан"
-fi
+# Проверяем наличие файла quotes_data.json
+if not os.path.exists("quotes_data.json"):
+    with open("quotes_data.json", "w", encoding="utf-8") as f:
+        f.write("{}")
+    print("📄 quotes_data.json создан")
 
 # Запуск бота
-python3 bot.py
+os.system("python3 bot.py")
