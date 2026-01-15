@@ -219,6 +219,9 @@ async def handle_message(message: Message):
         next_change_time.setdefault(chat_id, time.time() + get_next_interval())
         save_data()
 
+from keep_alive import keep_alive
+keep_alive()
+
 # ======================
 # Запуск
 # ======================
