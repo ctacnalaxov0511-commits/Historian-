@@ -25,7 +25,6 @@ if not os.path.exists(DATA_FILE):
 # ======================
 # Токен
 # ======================
-TOKEN = "8402954126:AAFtyY-cbxhK_tiYkOxgcuMf3JryLK8mN0I"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
